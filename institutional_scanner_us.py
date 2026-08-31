@@ -29,6 +29,19 @@ from watchlist_store import load_watchlist
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
+def format_setup_note(levels: dict) -> str:
+    """Appends the optional 'setup' and 'description' fields from the
+    watchlist entry to an alert message, if present."""
+    lines = ""
+    setup = levels.get("setup")
+    description = levels.get("description")
+    if setup:
+        lines += f"\n• *Setup:* {setup}"
+    if description:
+        lines += f"\n• *Note:* {description}"
+    return lines
+
 US_TZ = "America/New_York"
 US_SESSION_START = "09:30"
 US_SESSION_END = "16:00"
@@ -101,7 +114,7 @@ class InstitutionalFlowScannerUS:
                    f"• *Result:* `{r_txt}`")
             self.send_telegram_alert(msg)
 
-    def evaluate_symbol(self, symbol: str):
+    def evaluate_symbol(self, symbol: str, levels: dict):
         df_5m, df_daily = self.fetch_5m_and_daily(symbol)
         if df_5m.empty or len(df_5m) < 15 or df_daily.empty or len(df_daily) < 15:
             return
@@ -151,6 +164,7 @@ class InstitutionalFlowScannerUS:
                f"• *Fresh Session High:* `{signal['fresh_high']}`\n"
                f"• *Catalyst:* {catalyst_line}\n"
                f"{format_trade_plan_line(plan, currency_symbol='$')}")
+        msg += format_setup_note(levels)
 
         log_alert(market="US", symbol=symbol, setup_type="institutional", entry_price=entry_price,
                   stop_loss=stop_loss, target_price=plan.get("target"), quantity=plan.get("quantity"),
@@ -169,8 +183,8 @@ class InstitutionalFlowScannerUS:
             now = pd.Timestamp.now(tz=US_TZ).time()
             if scan_start <= now <= scan_end:
                 watchlist = load_watchlist()  # re-read every poll -- picks up bot updates live
-                for symbol in watchlist:
-                    self.evaluate_symbol(symbol)
+                for symbol, levels in watchlist.items():
+                    self.evaluate_symbol(symbol, levels)
                 time.sleep(POLL_INTERVAL_SECONDS)
             elif now < scan_start:
                 time.sleep(60)

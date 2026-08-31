@@ -22,6 +22,21 @@ from watchlist_store import load_watchlist
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
+def format_setup_note(levels: dict) -> str:
+    """Appends the optional 'setup' and 'description' fields from the
+    watchlist entry to an alert message, if present. Both are optional --
+    omit either or both from a ticker's watchlist entry and this returns
+    just what's there (or an empty string if neither is set)."""
+    lines = ""
+    setup = levels.get("setup")
+    description = levels.get("description")
+    if setup:
+        lines += f"\n• *Setup:* {setup}"
+    if description:
+        lines += f"\n• *Note:* {description}"
+    return lines
+
 US_TZ = "America/New_York"
 US_SESSION_START = "09:30"
 US_SESSION_END = "16:00"
@@ -156,6 +171,7 @@ class USSwingScanner:
                    f"• *RVOL:* `{rvol['rvol_ratio']}x` (`{rvol['rvol_pct']}%` vs avg)\n"
                    f"• *{rvol['elapsed_mins']:.0f} min into session*\n"
                    f"• *Last Close:* `${df_5m_today['close'].iloc[-1]:.2f}`")
+            msg += format_setup_note(levels)
             self.dispatch_if_new_bar(symbol, "extreme_rvol", last_bar_5m_ts, msg, df=df_5m_today)
 
         # --- Generic Alert: high RVOL + near intraday 9EMA, independent of any level ---
@@ -166,6 +182,7 @@ class USSwingScanner:
                    f"• *Price vs Intraday 9EMA:* `{ema9_intraday['pct_diff']}%` "
                    f"({'above' if ema9_intraday['above_ema'] else 'below'})\n"
                    f"• *Last Close:* `${ema9_intraday['last_close']:.2f}`")
+            msg += format_setup_note(levels)
             self.dispatch_if_new_bar(symbol, "rvol_ema_generic", last_bar_5m_ts, msg, df=df_5m_today)
 
         # --- Setup 1: Breakout ---
@@ -182,6 +199,7 @@ class USSwingScanner:
                        f"• *RVOL:* `{rvol['rvol_ratio']}x`\n"
                        f"• *Near 9EMA(D):* `{ema9_daily['is_near']}`\n"
                        f"{format_trade_plan_line(plan, currency_symbol='$')}")
+                msg += format_setup_note(levels)
                 self.dispatch_if_new_bar(symbol, "breakout", last_bar_5m_ts, msg,
                                           df=df_5m_today, entry=entry_price, stop=result["stop_loss"],
                                           target=plan.get("target"), key_level=resistance,
@@ -201,6 +219,7 @@ class USSwingScanner:
                        f"• *RVOL:* `{rvol['rvol_ratio']}x`\n"
                        f"• *Near 9EMA(D):* `{ema9_daily['is_near']}`\n"
                        f"{format_trade_plan_line(plan, currency_symbol='$')}")
+                msg += format_setup_note(levels)
                 self.dispatch_if_new_bar(symbol, "unr", last_bar_5m_ts, msg,
                                           df=df_5m_today, entry=entry_price, stop=result["stop_loss"],
                                           target=plan.get("target"), key_level=support,
@@ -221,6 +240,7 @@ class USSwingScanner:
                        f"• *Trigger:* Broke green candle high off `${pivot_level}`\n"
                        f"• *RVOL:* `{rvol['rvol_ratio']}x`\n"
                        f"{format_trade_plan_line(plan, currency_symbol='$')}")
+                msg += format_setup_note(levels)
                 self.dispatch_if_new_bar(symbol, "30m_pivot", last_bar_30m_ts, msg,
                                           df=today_30m, entry=entry_price, stop=result["stop_loss"],
                                           target=plan.get("target"), key_level=pivot_level,
