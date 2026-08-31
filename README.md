@@ -89,9 +89,24 @@ python alert_report.py US
 
 ## Known limitation
 
-Both bots write to the same `alerts.db` SQLite file. Running them
-concurrently in one job (via threads in `run_shift.py`) can very
-occasionally produce a "database is locked" error in the logs if both try
-to write in the same instant -- harmless (the alert still fires to
-Telegram either way), just a logging retry away from a cleaner fix if it
-ever becomes noisy in practice.
+## one liner
+
+From the main scanner (scanner_us.py):
+
+**🔥 Extreme Volume Alert** — "Something unusual is happening in this stock right now." Fires when trading volume is 10x or more than normal for this time of day, regardless of what price level you set. No setup needed — just flags "eyes on this."
+📊** RVOL + 9EMA Alert** — "High volume + price sitting right at its trend line." Fires when volume is at least 1.5x normal and the price is hovering close to its 9-day moving average (a common trend-following reference point). Doesn't need a resistance/support level — works for any ticker on your list.
+🚀 **Breakout Alert** — "Price broke above your resistance level, with volume backing it up." This is the classic "it broke out, and real buyers showed up" signal — only fires if you set a resistance price for that ticker.
+⚡ **Undercut & Rally Alert** — "Price dipped below your support, then recovered above it." This is a shakeout/bear-trap pattern — weak hands get scared out below support, then it rallies back. Only fires if you set a support price.
+📈 30-Min Pivot Alert — "Price broke above the high of a green 30-minute candle near your pivot level." A shorter-term momentum trigger. Only fires if you set a pivot_level.
+
+From the institutional scanner (institutional_scanner_us.py):
+
+🏦 **Institutional Flow Alert** — "This looks like big-money buying, not retail noise." The strictest one — needs extreme volume (40x+ normal), the price closing strong near the top of its range, and that volume being sustained over a couple of bars (not just one freak spike). It also checks recent news for a possible catalyst and includes that in the alert.
+
+**Bonus, from either bot, after an alert already fired**:
+
+✅ Target Hit / 🛑 Stop Hit — once alerts #3, #4, #5, or #6 fire (the ones with an actual trade plan — entry/stop/target), the bot keeps watching that trade in the background and pings you again when price later hits your profit target or your stop loss, so you know how it played out.
+
+Any of these can carry your extra setup/description notes if you filled them in for that ticker — so a breakout alert on a ticker you tagged "VCP breakout" will show that context right in the message.
+
+
