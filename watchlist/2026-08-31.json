@@ -1,6 +1,30 @@
 {
-  "SYRE": {"resistance": 108, "support": 98, "pivot_level": null},
-  "CRWD": {"resistance": 219, "support": 202, "pivot_level": null},
-  "DFTX": {"resistance": 46.17, "support": 44.45, "pivot_level": 49.47},
-  "NVDA": {"resistance": null, "support": null, "pivot_level": null}
+  "SYRE": {
+    "resistance": 108,
+    "support": 98,
+    "pivot_level": null,
+    "setup": "VCP breakout",
+    "description": "3-week tight base, low volume contraction, watching for volume breakout above 108"
+  },
+  "CRWD": {
+    "resistance": 219,
+    "support": 202,
+    "pivot_level": null,
+    "setup": "High Tight Flag",
+    "description": "Sharp run-up then flagging near highs, wants to see reclaim of 219 on volume"
+  },
+  "DFTX": {
+    "resistance": 46.17,
+    "support": 44.45,
+    "pivot_level": 49.47,
+    "setup": "",
+    "description": ""
+  },
+  "NVDA": {
+    "resistance": null,
+    "support": null,
+    "pivot_level": null,
+    "setup": "",
+    "description": ""
+  }
 }
