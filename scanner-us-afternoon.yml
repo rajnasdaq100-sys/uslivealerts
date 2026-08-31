@@ -1,0 +1,49 @@
+name: US Scanner - Afternoon Shift
+
+# Triggers 16:45 UTC = 12:45 ET (EDT) / 11:45 ET (EST) -- early enough to
+# cover both daylight-saving states; the scripts wait internally (via
+# SCAN_START_TIME below) until the real 13:00 ET handoff from the morning
+# shift. Runs until 16:05 ET (5 min past the close, to catch the final bar).
+on:
+  schedule:
+    - cron: '45 16 * * 1-5'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330   # 5.5h safety cap, comfortably above worst-case (~5h20)
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      SCAN_START_TIME: "13:00"
+      SCAN_END_TIME: "16:05"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run afternoon shift (both scanners)
+        run: python run_shift.py
+
+      - name: Commit updated alert log
+        if: always()
+        run: |
+          if [ -f alerts.db ]; then
+            git config user.name "us-scanner-bot"
+            git config user.email "actions@github.com"
+            git add alerts.db
+            git pull --rebase --autostash
+            git diff --staged --quiet || git commit -m "Log alerts: afternoon shift $(date -u +%Y-%m-%d)"
+            git push
+          else
+            echo "No alerts.db created this run (empty watchlist?) -- nothing to commit."
+          fi

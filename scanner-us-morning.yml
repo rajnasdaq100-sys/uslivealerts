@@ -1,0 +1,50 @@
+name: US Scanner - Morning Shift
+
+# Triggers 13:15 UTC = 9:15 ET (EDT) / 8:15 ET (EST) -- early enough to cover
+# both daylight-saving states; the scripts themselves wait internally
+# (via SCAN_START_TIME below) until the real 9:30 ET open, so an early
+# trigger under EST just means a few extra minutes idling, not a problem.
+# Runs until 13:00 ET, well under GitHub's 6h job cap either way.
+on:
+  schedule:
+    - cron: '15 13 * * 1-5'
+  workflow_dispatch: {}   # lets you trigger a run manually from the Actions tab
+
+permissions:
+  contents: write   # needed to commit alerts.db back at the end
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300   # 5h safety cap, comfortably above worst-case (~4h45)
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      SCAN_START_TIME: "09:30"
+      SCAN_END_TIME: "13:00"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run morning shift (both scanners)
+        run: python run_shift.py
+
+      - name: Commit updated alert log
+        if: always()   # commit whatever alerts fired even if the job errored partway through
+        run: |
+          if [ -f alerts.db ]; then
+            git config user.name "us-scanner-bot"
+            git config user.email "actions@github.com"
+            git add alerts.db
+            git pull --rebase --autostash
+            git diff --staged --quiet || git commit -m "Log alerts: morning shift $(date -u +%Y-%m-%d)"
+            git push
+          else
+            echo "No alerts.db created this run (empty watchlist?) -- nothing to commit."
+          fi
