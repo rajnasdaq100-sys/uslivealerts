@@ -19,6 +19,7 @@ from entry_setups import (
 from alert_enrichment import compute_trade_plan, format_trade_plan_line, render_chart_snapshot
 from alert_logger import log_alert, check_outcomes
 from watchlist_store import load_watchlist
+from pivot_cross_alert import check_pivot_cross
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -225,7 +226,7 @@ class USSwingScanner:
                                           target=plan.get("target"), key_level=support,
                                           quantity=plan.get("quantity"), rvol=rvol["rvol_ratio"])
 
-        # --- Setup 3: 30-Min Pivot ---
+        # --- Setup 3: 30-Min Pivot (candle-color gated, checked every 30m) ---
         pivot_level = levels.get("pivot_level")
         if pivot_level and not df_30m.empty:
             today_30m = df_30m[df_30m.index.date == today]
@@ -243,6 +244,24 @@ class USSwingScanner:
                 msg += format_setup_note(levels)
                 self.dispatch_if_new_bar(symbol, "30m_pivot", last_bar_30m_ts, msg,
                                           df=today_30m, entry=entry_price, stop=result["stop_loss"],
+                                          target=plan.get("target"), key_level=pivot_level,
+                                          quantity=plan.get("quantity"), rvol=rvol["rvol_ratio"])
+
+        # --- Setup 4: Pivot Cross (instant 5m price cross, no candle-color gate) ---
+        if pivot_level:
+            cross_result = check_pivot_cross(df_5m_today, pivot_level)
+            if cross_result["triggered"]:
+                entry_price = df_5m_today["close"].iloc[-1]
+                plan = compute_trade_plan(entry_price, cross_result["stop_loss"], ACCOUNT_CAPITAL,
+                                           RISK_PER_TRADE_PCT, TARGET_R_MULTIPLE)
+                msg = (f"🎯 *US PIVOT CROSS ALERT*\n"
+                       f"• *Symbol:* `{symbol}`\n"
+                       f"• *Trigger:* Crossed above pivot `${pivot_level}`\n"
+                       f"• *RVOL:* `{rvol['rvol_ratio']}x`\n"
+                       f"{format_trade_plan_line(plan, currency_symbol='$')}")
+                msg += format_setup_note(levels)
+                self.dispatch_if_new_bar(symbol, "pivot_cross", last_bar_5m_ts, msg,
+                                          df=df_5m_today, entry=entry_price, stop=cross_result["stop_loss"],
                                           target=plan.get("target"), key_level=pivot_level,
                                           quantity=plan.get("quantity"), rvol=rvol["rvol_ratio"])
 
