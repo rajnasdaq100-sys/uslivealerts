@@ -1,0 +1,38 @@
+{
+  "SYRE": {
+    "resistance": 108,
+    "support": 98,
+    "pivot_level": null,
+    "setup": "VCP breakout",
+    "description": "3-week tight base, low volume contraction, watching for volume breakout above 108"
+  },
+  "CRWD": {
+    "resistance": 219,
+    "support": 202,
+    "pivot_level": null,
+    "setup": "High Tight Flag",
+    "description": "Sharp run-up then flagging near highs, wants to see reclaim of 219 on volume"
+  },
+  "VYX": {
+    "resistance": 8.74,
+    "support": 8.30,
+    "pivot_level": 8.74,
+    "setup": "",
+    "description": "200 ema supportr setup"
+  },
+  "ABCL": {
+    "resistance": 11.28,
+    "support": 10.51,
+    "pivot_level": 11.28,
+    "setup": "",
+    "description": "100 percent leg,3 weeks of consolidation"
+  },
+  "ACCL": {
+    "resistance": 2.96,
+    "support": 2.74,
+    "pivot_level": 2.96,
+    "setup": "",
+    "description": "90 percent leg,highrs,goodconsolidation"
+  }
+
+}
