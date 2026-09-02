@@ -20,6 +20,7 @@ from alert_enrichment import compute_trade_plan, format_trade_plan_line, render_
 from alert_logger import log_alert, check_outcomes
 from watchlist_store import load_watchlist
 from pivot_cross_alert import check_pivot_cross
+from rvol_pulse_alert import RVOL_PULSE_THRESHOLD, time_bucket
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -174,6 +175,18 @@ class USSwingScanner:
                    f"• *Last Close:* `${df_5m_today['close'].iloc[-1]:.2f}`")
             msg += format_setup_note(levels)
             self.dispatch_if_new_bar(symbol, "extreme_rvol", last_bar_5m_ts, msg, df=df_5m_today)
+
+        # --- RVOL Pulse: relative-volume-only ping, no other conditions,
+        # much looser threshold, throttled to once per 10 min (not per bar) ---
+        if rvol_is_reliable and rvol["rvol_ratio"] >= RVOL_PULSE_THRESHOLD:
+            msg = (f"📶 *US RVOL PULSE ALERT*\n"
+                   f"• *Symbol:* `{symbol}`\n"
+                   f"• *RVOL:* `{rvol['rvol_ratio']}x` (`{rvol['rvol_pct']}%` vs avg)\n"
+                   f"• *{rvol['elapsed_mins']:.0f} min into session*\n"
+                   f"• *Last Close:* `${df_5m_today['close'].iloc[-1]:.2f}`")
+            msg += format_setup_note(levels)
+            bucket = time_bucket(pd.Timestamp.now(tz=US_TZ))
+            self.dispatch_if_new_bar(symbol, "rvol_pulse", bucket, msg, df=df_5m_today)
 
         # --- Generic Alert: high RVOL + near intraday 9EMA, independent of any level ---
         if high_volume and ema9_intraday["is_near"]:
