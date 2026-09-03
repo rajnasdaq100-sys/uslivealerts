@@ -74,9 +74,13 @@ def render_chart_snapshot(df, symbol: str, entry_price: float = None,
         ))
         ax_vol.bar(idx, row.volume, color=color, width=0.6)
 
+    lines_drawn = False
+
     def hline(value, color, label):
+        nonlocal lines_drawn
         if value is not None:
             ax_price.axhline(value, color=color, linestyle="--", linewidth=1, label=label)
+            lines_drawn = True
 
     hline(entry_price, "#2962ff", "Entry")
     hline(stop_loss, "#ef5350", "Stop")
@@ -84,7 +88,13 @@ def render_chart_snapshot(df, symbol: str, entry_price: float = None,
     hline(key_level, "#ff9800", "Key Level")
 
     ax_price.set_title(f"{symbol} -- last {lookback_bars} bars", fontsize=10)
-    ax_price.legend(loc="upper left", fontsize=7, framealpha=0.5)
+    # Alerts that don't carry a trade plan (e.g. RVOL Pulse, Extreme Volume)
+    # pass no entry/stop/target/key_level, so no hlines get drawn above --
+    # calling legend() with nothing labeled throws a "No artists with
+    # labels found" UserWarning and renders an empty legend box. Only show
+    # it when there's actually something to label.
+    if lines_drawn:
+        ax_price.legend(loc="upper left", fontsize=7, framealpha=0.5)
     ax_price.grid(alpha=0.2)
     ax_vol.grid(alpha=0.2)
     plt.setp(ax_price.get_xticklabels(), visible=False)

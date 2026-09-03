@@ -89,24 +89,29 @@ python alert_report.py US
 
 ## Known limitation
 
-## one liner
+yfinance intraday data is ~15 minutes delayed (free tier), so every alert
+timestamp lags the real print by roughly that much. Fine for the swing/
+end-of-day style setups here, but don't treat this as a scalping tool.
 
-From the main scanner (scanner_us.py):
+## Alert types, one-liner each
 
-**🔥 Extreme Volume Alert** — "Something unusual is happening in this stock right now." Fires when trading volume is 10x or more than normal for this time of day, regardless of what price level you set. No setup needed — just flags "eyes on this."
-📊** RVOL + 9EMA Alert** — "High volume + price sitting right at its trend line." Fires when volume is at least 1.5x normal and the price is hovering close to its 9-day moving average (a common trend-following reference point). Doesn't need a resistance/support level — works for any ticker on your list.
+From the main scanner (`scanner_us.py`):
+
+🔥 **Extreme Volume Alert** — "Something unusual is happening in this stock right now." Fires when trading volume is 10x or more than normal for this time of day, regardless of what price level you set. No setup needed — just flags "eyes on this."
+📶 **RVOL Pulse Alert** — the loosest ping there is: volume just 10%+ above normal, no other condition. Throttled to once per 10 minutes per symbol so it doesn't spam. Meant as an early "something's stirring" heads-up, not a trade signal — no entry/stop/target is logged for it.
+📊 **RVOL + 9EMA Alert** — "High volume + price sitting right at its trend line." Fires when volume is at least 1.5x normal and the price is hovering close to its 9-day moving average (a common trend-following reference point). Doesn't need a resistance/support level — works for any ticker on your list.
 🚀 **Breakout Alert** — "Price broke above your resistance level, with volume backing it up." This is the classic "it broke out, and real buyers showed up" signal — only fires if you set a resistance price for that ticker.
 ⚡ **Undercut & Rally Alert** — "Price dipped below your support, then recovered above it." This is a shakeout/bear-trap pattern — weak hands get scared out below support, then it rallies back. Only fires if you set a support price.
-📈 30-Min Pivot Alert — "Price broke above the high of a green 30-minute candle near your pivot level." A shorter-term momentum trigger. Only fires if you set a pivot_level.
+📈 **30-Min Pivot Alert** — "Price broke above the high of a green 30-minute candle near your pivot level." A shorter-term momentum trigger, gated on candle color, checked every 30 minutes. Only fires if you set a `pivot_level`.
+🎯 **Pivot Cross Alert** — a faster, looser cousin of the 30-Min Pivot alert: fires the moment price closes at/above your `pivot_level` on a 5-minute bar, no candle-color or volume condition. You may get this one first, and possibly the 30-Min Pivot alert afterward if a green 30-min candle later confirms it.
 
-From the institutional scanner (institutional_scanner_us.py):
+From the institutional scanner (`institutional_scanner_us.py`):
 
 🏦 **Institutional Flow Alert** — "This looks like big-money buying, not retail noise." The strictest one — needs extreme volume (40x+ normal), the price closing strong near the top of its range, and that volume being sustained over a couple of bars (not just one freak spike). It also checks recent news for a possible catalyst and includes that in the alert.
 
 **Bonus, from either bot, after an alert already fired**:
 
-✅ Target Hit / 🛑 Stop Hit — once alerts #3, #4, #5, or #6 fire (the ones with an actual trade plan — entry/stop/target), the bot keeps watching that trade in the background and pings you again when price later hits your profit target or your stop loss, so you know how it played out.
+✅ Target Hit / 🛑 Stop Hit — for the alert types with an actual trade plan (Breakout, Undercut & Rally, 30-Min Pivot, Pivot Cross, Institutional Flow), the bot keeps watching that trade in the background and pings you again when price later hits your profit target or your stop loss, so you know how it played out. (Extreme Volume and RVOL Pulse don't carry a trade plan, so they're not tracked for outcome.)
 
 Any of these can carry your extra setup/description notes if you filled them in for that ticker — so a breakout alert on a ticker you tagged "VCP breakout" will show that context right in the message.
-
 

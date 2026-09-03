@@ -1,4 +1,8 @@
 yfinance
+curl_cffi   # yfinance depends on this for its browser-impersonation session;
+            # pinning it explicitly here as insurance -- an unpinned yfinance
+            # relying on it as a transitive dependency is what caused the
+            # GitHub Actions 401 error on the NSE-Quant repo previously.
 pandas
 requests
 matplotlib

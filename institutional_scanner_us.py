@@ -116,7 +116,11 @@ class InstitutionalFlowScannerUS:
 
     def evaluate_symbol(self, symbol: str, levels: dict):
         df_5m, df_daily = self.fetch_5m_and_daily(symbol)
-        if df_5m.empty or len(df_5m) < 15 or df_daily.empty or len(df_daily) < 15:
+        # Daily-bar minimum matches scanner_us.py's threshold (30) rather than a
+        # looser one -- both scanners compute the 50-day average volume the same
+        # way (iloc[-51:-1]), so using a looser floor here would let this scanner
+        # base RVOL off a much smaller, noisier sample than the main scanner would.
+        if df_5m.empty or len(df_5m) < 15 or df_daily.empty or len(df_daily) < 30:
             return
 
         today = pd.Timestamp.now(tz=US_TZ).date()

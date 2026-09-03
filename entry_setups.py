@@ -44,7 +44,12 @@ def relative_volume(intraday_df: pd.DataFrame, daily_avg_vol: float,
     total_session_mins = (sess_end - sess_start).total_seconds() / 60  # 375 for NSE, 390 for US
 
     elapsed_mins = max((now - sess_start).total_seconds() / 60, 0)
-    is_active = 0 < elapsed_mins < total_session_mins
+    # Use <= 0 here (not < 0) so the instant the session opens (elapsed_mins
+    # exactly 0) is still treated as "session in progress", not "day already
+    # complete" -- otherwise pct_completed below would jump straight to 1.0
+    # right at the open instead of the near-zero value the max(..., 0.01)
+    # guard on the next line is meant to catch.
+    is_active = 0 <= elapsed_mins < total_session_mins
     pct_completed = (elapsed_mins / total_session_mins) if is_active else 1.0
     pct_completed = max(pct_completed, 0.01)  # guard div-by-zero right at open
 
