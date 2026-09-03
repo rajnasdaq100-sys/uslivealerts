@@ -1,0 +1,29 @@
+name: Test Telegram Alerts
+
+# Manual-only -- click "Run workflow" in the Actions tab any time you want
+# to confirm TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID are correctly set as
+# GitHub Secrets and that Telegram delivery actually works from the Actions
+# runner (not just locally). No schedule, no market-hours dependency --
+# this is a pure connectivity check, separate from the real scanners.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Send test Telegram message + chart
+        run: python test_telegram.py
